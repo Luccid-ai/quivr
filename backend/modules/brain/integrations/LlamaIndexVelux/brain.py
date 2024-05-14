@@ -16,7 +16,6 @@ from llama_index.core import (
 # from llama_index.core.base.base_query_engine import BaseQueryEngine
 from llama_index.core.chat_engine.types import ChatMode
 from llama_index.core.llms import ChatMessage, MessageRole
-from llama_index.core.node_parser import MarkdownElementNodeParser
 from llama_index.core.prompts import PromptTemplate, PromptType
 
 # from llama_index.core.ingestion import (
@@ -91,7 +90,7 @@ else:
     print("### No index found...")
 
 embed_model = OpenAIEmbedding(model="text-embedding-3-small")
-llm = OpenAI(model="gpt-4-turbo-preview")
+llm = OpenAI(model="gpt-4o")
 
 Settings.llm = llm
 Settings.embed_model = embed_model
