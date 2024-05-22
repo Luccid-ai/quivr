@@ -2,9 +2,10 @@ import os
 
 from llama_index.core import (
     Settings,
-    VectorStoreIndex,
     SimpleDirectoryReader,
     StorageContext,
+    SummaryIndex,
+    VectorStoreIndex,
 )
 from llama_index.core.node_parser import MarkdownElementNodeParser
 
@@ -52,17 +53,18 @@ class LlamaIndexBrain:
         node_parser = MarkdownElementNodeParser(llm=llm)
         nodes = node_parser.get_nodes_from_documents(docs)
         base_nodes, objects = node_parser.get_nodes_and_objects(nodes)
-        index = VectorStoreIndex(nodes=base_nodes + objects)
-        index.set_index_id("vector_index")
-        index.storage_context.persist(index_data)
+        vector_index = VectorStoreIndex(nodes=base_nodes + objects)
+        vector_index.set_index_id("vector_index")
+        vector_index.storage_context.persist(index_data)
+        summary_index = SummaryIndex(nodes=base_nodes + objects)
+        summary_index.set_index_id("summary_index")
+        summary_index.storage_context.persist(index_data)
         print(f"Ingested {len(nodes)} Nodes")
 
 
 if __name__ == "__main__":
     try:
-        storage_context = StorageContext.from_defaults(
-            persist_dir=index_data
-        )
+        storage_context = StorageContext.from_defaults(persist_dir=index_data)
     except ValueError as e:
         if (
             e

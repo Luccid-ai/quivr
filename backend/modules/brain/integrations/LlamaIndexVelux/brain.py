@@ -14,23 +14,14 @@ from llama_index.core import (
 )
 
 # from llama_index.core.base.base_query_engine import BaseQueryEngine
-from llama_index.core.chat_engine.types import ChatMode
+from llama_index.core.chat_engine import ContextChatEngine
 from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.core.prompts import PromptTemplate, PromptType
-
-# from llama_index.core.ingestion import (
-#     DocstoreStrategy,
-#     IngestionCache,
-#     IngestionPipeline,
-# )
+from llama_index.core.retrievers import RouterRetriever
+from llama_index.core.tools import RetrieverTool, ToolMetadata
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openai import OpenAI
 from llama_index.postprocessor.flag_embedding_reranker import FlagEmbeddingReranker
-
-# from llama_index.readers.google import GoogleDriveReader
-# from llama_index.storage.kvstore.redis import RedisKVStore as RedisCache
-# from llama_index.storage.docstore.redis import RedisDocumentStore
-# from llama_index.vector_stores.redis import RedisVectorStore
 
 from modules.brain.knowledge_brain_qa import KnowledgeBrainQA
 from modules.chat.dto.chats import ChatQuestion
@@ -40,7 +31,8 @@ folder_name = "Documents/Manufacturers/Velux-UK"
 index_data = os.path.join(data_directory, folder_name, "index-data")
 
 storage_context = None
-index = None
+vector_index = None
+summary_index = None
 reranker = None
 
 if os.path.exists(index_data):
@@ -56,18 +48,31 @@ if os.path.exists(index_data):
             print(
                 f"####### Finishing loading storage context... in {elapsed_time:.2f} seconds #######"
             )
-        if not index:
-            print("####### Starting loading index from storage... #######")
+        if not vector_index:
+            print("####### Starting loading vector index from storage... #######")
             start_time = time.time()  # Record the start time
 
-            index = load_index_from_storage(
+            vector_index = load_index_from_storage(
                 storage_context=storage_context, index_id="vector_index"
             )
 
             end_time = time.time()  # Record the end time
             elapsed_time = end_time - start_time  # Calculate elapsed time
             print(
-                f"####### Finishing loading index from storage... in {elapsed_time:.2f} seconds #######"
+                f"####### Finishing loading vector index from storage... in {elapsed_time:.2f} seconds #######"
+            )
+        if not summary_index:
+            print("####### Starting loading summary index from storage... #######")
+            start_time = time.time()  # Record the start time
+
+            summary_index = load_index_from_storage(
+                storage_context=storage_context, index_id="summary_index"
+            )
+
+            end_time = time.time()  # Record the end time
+            elapsed_time = end_time - start_time  # Calculate elapsed time
+            print(
+                f"####### Finishing loading summary index from storage... in {elapsed_time:.2f} seconds #######"
             )
         if not reranker:
             print("####### Starting loading reranker... #######")
@@ -112,15 +117,16 @@ class LlamaIndexVeluxUK(KnowledgeBrainQA):
             **kwargs,
         )
         self._storage_context = storage_context
-        self._index = index
+        self._vector_index = vector_index
+        self._summary_index = summary_index
         self._reranker = reranker
 
     def _get_engine(self):
-        if not self._index:
+        if not self._vector_index or not self._summary_index:
             print("### No index found...")
             return None
 
-        VELUX_TEXT_QA_PROMPT_TMPL = (
+        VELUX_SYSTEM_PROMPT_TMPL = (
             "Context information is below.\n"
             "---------------------\n"
             "{context_str}\n"
@@ -137,23 +143,50 @@ class LlamaIndexVeluxUK(KnowledgeBrainQA):
             "Always answer in the language you were spoken to unless the user speaks in serbian or croatian, then always answer in latin serbian."
             "Query: {query_str}\n"
         )
-        VELUX_TEXT_QA_PROMPT = PromptTemplate(
-            VELUX_TEXT_QA_PROMPT_TMPL, prompt_type=PromptType.QUESTION_ANSWER
-        )
-        VELUX_SYSTEM_PROMPT_TMPL = VELUX_TEXT_QA_PROMPT_TMPL
         VELUX_SYSTEM_PROMPT = PromptTemplate(
             VELUX_SYSTEM_PROMPT_TMPL, prompt_type=PromptType.CUSTOM
         )
 
-        return self._index.as_chat_engine(
-            chat_mode=ChatMode.CONTEXT,
+        # TODO(pg): add Router and/or SubQuestion
+        vector_tool = RetrieverTool(
+            self._vector_index.as_retriever(),
+            metadata=ToolMetadata(
+                name="vector_search",
+                description="Useful for searching for specific facts.",
+            ),
+        )
+
+        summary_tool = RetrieverTool(
+            self._summary_index.as_retriever(response_mode="tree_summarize"),
+            metadata=ToolMetadata(
+                name="summary",
+                description="Useful for summarizing entire documents.",
+            ),
+        )
+
+        retriever = RouterRetriever.from_defaults(
+            [vector_tool, summary_tool], select_multi=True
+        )
+
+        node_postprocessors = [self._reranker] if self._reranker else []
+
+        return ContextChatEngine.from_defaults(
+            retriever=retriever,
             similarity_top_k=15,
-            node_postprocessors=[self._reranker],
-            text_qa_template=VELUX_TEXT_QA_PROMPT,
+            node_postprocessors=node_postprocessors,
             system_prompt=VELUX_SYSTEM_PROMPT,
             stream=True,
             verbose=True,
         )
+        # return self._index.as_chat_engine(
+        #     chat_mode=ChatMode.CONTEXT,
+        #     similarity_top_k=15,
+        #     node_postprocessors=[self._reranker],
+        #     text_qa_template=VELUX_TEXT_QA_PROMPT,
+        #     system_prompt=VELUX_SYSTEM_PROMPT,
+        #     stream=True,
+        #     verbose=True,
+        # )
 
     def _format_chat_history(self, chat_history):
         return [
