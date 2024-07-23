@@ -268,3 +268,4 @@ xlsxwriter==3.2.0; python_version >= '3.6'
 xxhash==3.4.1; python_version >= '3.7'
 yarl==1.9.4; python_version >= '3.7'
 zipp==3.18.1; python_version >= '3.8'
+peft

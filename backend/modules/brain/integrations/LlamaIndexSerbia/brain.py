@@ -16,7 +16,6 @@ from llama_index.core import (
 # from llama_index.core.base.base_query_engine import BaseQueryEngine
 from llama_index.core.chat_engine.types import ChatMode
 from llama_index.core.llms import ChatMessage, MessageRole
-from llama_index.core.node_parser import MarkdownElementNodeParser
 from llama_index.core.prompts import PromptTemplate, PromptType
 
 # from llama_index.core.ingestion import (
@@ -147,7 +146,7 @@ class LlamaIndexSerbia(KnowledgeBrainQA):
 
         return self._index.as_chat_engine(
             chat_mode=ChatMode.CONTEXT,
-            similarity_top_k=10,
+            similarity_top_k=15,
             node_postprocessors=[self._reranker],
             text_qa_template=DEFAULT_TEXT_QA_PROMPT,
             stream=True,
