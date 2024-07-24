@@ -1,15 +1,14 @@
 from logger import get_logger
-from modules.brain.api_brain_qa import APIBrainQA
 from modules.brain.entity.brain_entity import BrainType, RoleEnum
 from modules.brain.integrations.Big.Brain import BigBrain
 from modules.brain.integrations.GPT4.Brain import GPT4Brain
 from modules.brain.integrations.Notion.Brain import NotionBrain
 from modules.brain.integrations.SQL.Brain import SQLBrain
-from modules.brain.integrations.LlamaIndex.brain import LlamaIndexBrain
 from modules.brain.integrations.LlamaIndexBerlin.brain import LlamaIndexBerlin
 from modules.brain.integrations.LlamaIndexKnauf.brain import LlamaIndexKnauf
 from modules.brain.integrations.LlamaIndexSerbia.brain import LlamaIndexSerbia
 from modules.brain.integrations.LlamaIndexVelux.brain import LlamaIndexVeluxUK
+from modules.brain.integrations.LlamaIndexSerbiaGemini.brain import LlamaIndexSerbiaGemini
 from modules.brain.knowledge_brain_qa import KnowledgeBrainQA
 from modules.brain.service.api_brain_definition_service import ApiBrainDefinitionService
 from modules.brain.service.brain_authorization_service import (
@@ -32,6 +31,7 @@ models_supporting_function_calls = [
     "gpt-3.5-turbo",
     "gpt-4",
     "gpt-4-turbo-preview",
+    "gemini-pro",
 ]
 
 
@@ -44,6 +44,7 @@ integration_list = {
     # "llamaindex": LlamaIndexBrain,
     "llamaindexberlin": LlamaIndexBerlin,
     "llamaindexserbia": LlamaIndexSerbia,
+    "llamaindexserbiagemini": LlamaIndexSerbiaGemini,
     "llamaindexveluxuk": LlamaIndexVeluxUK,
     "llamaindexknauf": LlamaIndexKnauf,
 }
