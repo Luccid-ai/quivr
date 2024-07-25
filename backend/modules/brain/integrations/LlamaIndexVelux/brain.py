@@ -23,8 +23,6 @@ from llama_index.core.prompts import PromptTemplate, PromptType
 #     IngestionCache,
 #     IngestionPipeline,
 # )
-from llama_index.embeddings.openai import OpenAIEmbedding
-from llama_index.llms.openai import OpenAI
 from llama_index.postprocessor.flag_embedding_reranker import FlagEmbeddingReranker
 
 # from llama_index.readers.google import GoogleDriveReader
@@ -34,6 +32,9 @@ from llama_index.postprocessor.flag_embedding_reranker import FlagEmbeddingReran
 
 from modules.brain.knowledge_brain_qa import KnowledgeBrainQA
 from modules.chat.dto.chats import ChatQuestion
+
+from llama_index.embeddings.gemini import GeminiEmbedding
+from llama_index.llms.gemini import Gemini
 
 data_directory = "/data/"
 folder_name = "Documents/Manufacturers/Velux-UK"
@@ -89,8 +90,29 @@ if os.path.exists(index_data):
 else:
     print("### No index found...")
 
-embed_model = OpenAIEmbedding(model="text-embedding-3-small")
-llm = OpenAI(model="gpt-4o")
+# embed_model = OpenAIEmbedding(model="text-embedding-3-small")
+# llm = OpenAI(model="gpt-4o")
+
+safety_settings = [
+    {
+        "category": "HARM_CATEGORY_HARASSMENT",
+        "threshold": "BLOCK_NONE"
+    },
+    {
+        "category": "HARM_CATEGORY_HATE_SPEECH",
+        "threshold": "BLOCK_NONE"
+    },
+    {
+        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        "threshold": "BLOCK_NONE"
+    },
+    {
+        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+        "threshold": "BLOCK_NONE"
+    }
+]
+llm = Gemini(model="models/gemini-1.5-pro", safety_settings=safety_settings)
+embed_model = GeminiEmbedding(model_name="models/text-embedding-004")
 
 Settings.llm = llm
 Settings.embed_model = embed_model

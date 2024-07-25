@@ -37,7 +37,7 @@ from modules.brain.knowledge_brain_qa import KnowledgeBrainQA
 from modules.chat.dto.chats import ChatQuestion
 
 data_directory = "luccid-data/data/"
-folder_name = "Documents/SerbiaGemini"
+folder_name = "Documents/Serbia"
 index_data = os.path.join(data_directory, folder_name, "index-data")
 
 storage_context = None
@@ -92,8 +92,26 @@ if os.path.exists(index_data):
 else:
     print("### No index found...")
 
-llm = Gemini(model="models/gemini-pro")
-embed_model = GeminiEmbedding(model_name="models/embedding-001")
+safety_settings = [
+    {
+        "category": "HARM_CATEGORY_HARASSMENT",
+        "threshold": "BLOCK_NONE"
+    },
+    {
+        "category": "HARM_CATEGORY_HATE_SPEECH",
+        "threshold": "BLOCK_NONE"
+    },
+    {
+        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        "threshold": "BLOCK_NONE"
+    },
+    {
+        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+        "threshold": "BLOCK_NONE"
+    }
+]
+llm = Gemini(model="models/gemini-1.5-pro", safety_settings=safety_settings)
+embed_model = GeminiEmbedding(model_name="models/text-embedding-004")
 
 Settings.llm = llm
 Settings.embed_model = embed_model
@@ -147,7 +165,7 @@ class LlamaIndexSerbiaGemini(KnowledgeBrainQA):
 
         return self._index.as_chat_engine(
             chat_mode=ChatMode.CONTEXT,
-            similarity_top_k=15,
+            similarity_top_k=20,
             node_postprocessors=[self._reranker],
             text_qa_template=DEFAULT_TEXT_QA_PROMPT,
             stream=True,

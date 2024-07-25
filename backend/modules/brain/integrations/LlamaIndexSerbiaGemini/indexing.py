@@ -15,8 +15,26 @@ data_directory = "luccid-data/data/"
 folder_name = "Documents/SerbiaGemini"
 index_data = os.path.join(data_directory, folder_name, "index-data")
 
-llm = Gemini(model="models/gemini-pro")
-embed_model = GeminiEmbedding(model_name="models/embedding-001")
+safety_settings = [
+    {
+        "category": "HARM_CATEGORY_HARASSMENT",
+        "threshold": "BLOCK_NONE"
+    },
+    {
+        "category": "HARM_CATEGORY_HATE_SPEECH",
+        "threshold": "BLOCK_NONE"
+    },
+    {
+        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        "threshold": "BLOCK_NONE"
+    },
+    {
+        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+        "threshold": "BLOCK_NONE"
+    }
+]
+llm = Gemini(model="models/gemini-1.5-pro", safety_settings=safety_settings)
+embed_model = GeminiEmbedding(model_name="models/text-embedding-004")
 
 Settings.llm = llm
 Settings.embed_model = embed_model
