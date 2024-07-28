@@ -35,14 +35,43 @@ from llama_index.postprocessor.flag_embedding_reranker import FlagEmbeddingReran
 
 from modules.brain.knowledge_brain_qa import KnowledgeBrainQA
 from modules.chat.dto.chats import ChatQuestion
+from arize_otel import register_otel, Endpoints
+from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
+import importlib
+import sys
+import os
 
 data_directory = "luccid-data/data/"
-folder_name = "Documents/Serbia"
+folder_name = "Documents/SerbiaGemini"
 index_data = os.path.join(data_directory, folder_name, "index-data")
 
 storage_context = None
 index = None
 reranker = None
+
+def import_version(version):
+    if version == "0.10.43":
+        sys.path.insert(0, os.path.abspath('llama_index_core_0_10_43'))
+    
+    module_name = 'llama_index_core'
+    try:
+        module = importlib.import_module(module_name)
+        return module
+    except ModuleNotFoundError:
+        print(f"Module {module_name} not found in version {version}")
+        return None
+    
+import_version("0.10.43")
+# Setup OTEL via our convenience function
+register_otel(
+    endpoints = Endpoints.ARIZE,
+    space_key = "224c3ca", # in app space settings page
+    api_key = "b578ce267ae08994b8b", # in app space settings page
+    model_id = "SerbianBrain", # name this to whatever you would like
+)
+
+# Finish automatic instrumentation
+LlamaIndexInstrumentor().instrument()
 
 if os.path.exists(index_data):
     try:
@@ -110,7 +139,9 @@ safety_settings = [
         "threshold": "BLOCK_NONE"
     }
 ]
-llm = Gemini(model="models/gemini-1.5-pro", safety_settings=safety_settings)
+
+
+llm = Gemini(model="models/gemini-1.0-pro", safety_settings=safety_settings)
 embed_model = GeminiEmbedding(model_name="models/text-embedding-004")
 
 Settings.llm = llm

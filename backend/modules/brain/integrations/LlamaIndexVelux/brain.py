@@ -111,7 +111,7 @@ safety_settings = [
         "threshold": "BLOCK_NONE"
     }
 ]
-llm = Gemini(model="models/gemini-1.5-pro", safety_settings=safety_settings)
+llm = Gemini(model="models/gemini-1.0-pro", safety_settings=safety_settings)
 embed_model = GeminiEmbedding(model_name="models/text-embedding-004")
 
 Settings.llm = llm
