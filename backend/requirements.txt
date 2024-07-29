@@ -122,8 +122,8 @@ llama-index-storage-kvstore-redis==0.1.5; python_version >= '3.8'
 llama-index-vector-stores-redis==0.2.0; python_version >= '3.8'
 llama-parse==0.4.2; python_version < '4.0' and python_full_version >= '3.8.1'
 llamaindex-py-client==0.1.19; python_version >= '3.8' and python_version < '4'
-llama-index-llms-gemini==0.1.19; python_version < '4.0' and python_full_version >= '3.8.1'
-llama-index-embeddings-gemini==0.1.9; python_version < '4.0' and python_full_version >= '3.8.1'
+# llama-index-llms-gemini==0.1.19; python_version < '4.0' and python_full_version >= '3.8.1'
+# llama-index-embeddings-gemini==0.1.9; python_version < '4.0' and python_full_version >= '3.8.1'
 lxml[html_clean]==5.2.1; python_version >= '3.6'
 lxml-html-clean==0.1.1
 markdown==3.6

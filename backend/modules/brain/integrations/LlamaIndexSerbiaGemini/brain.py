@@ -37,8 +37,6 @@ from modules.brain.knowledge_brain_qa import KnowledgeBrainQA
 from modules.chat.dto.chats import ChatQuestion
 from arize_otel import register_otel, Endpoints
 from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
-import importlib
-import sys
 import os
 
 data_directory = "luccid-data/data/"
@@ -49,19 +47,6 @@ storage_context = None
 index = None
 reranker = None
 
-def import_version(version):
-    if version == "0.10.43":
-        sys.path.insert(0, os.path.abspath('llama_index_core_0_10_43'))
-    
-    module_name = 'llama_index_core'
-    try:
-        module = importlib.import_module(module_name)
-        return module
-    except ModuleNotFoundError:
-        print(f"Module {module_name} not found in version {version}")
-        return None
-    
-import_version("0.10.43")
 # Setup OTEL via our convenience function
 register_otel(
     endpoints = Endpoints.ARIZE,

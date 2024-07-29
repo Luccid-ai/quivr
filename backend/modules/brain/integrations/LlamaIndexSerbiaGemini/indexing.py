@@ -6,7 +6,6 @@ from llama_index.core import (
     SimpleDirectoryReader,
     StorageContext,
 )
-from llama_index.core.node_parser import MarkdownElementNodeParser
 
 from llama_index.embeddings.gemini import GeminiEmbedding
 from llama_index.llms.gemini import Gemini
@@ -67,13 +66,11 @@ class LlamaIndexBrain:
 
     @classmethod
     def _parse_nodes(cls, docs):
-        node_parser = MarkdownElementNodeParser(llm=llm)
-        nodes = node_parser.get_nodes_from_documents(docs)
-        base_nodes, objects = node_parser.get_nodes_and_objects(nodes)
-        index = VectorStoreIndex(nodes=base_nodes + objects)
+        # Kreiraj index direktno od dokumenata
+        index = VectorStoreIndex.from_documents(docs)
         index.set_index_id("vector_index")
         index.storage_context.persist(index_data)
-        print(f"Ingested {len(nodes)} Nodes")
+        print(f"Ingested {len(docs)} Docs")
 
 
 if __name__ == "__main__":
