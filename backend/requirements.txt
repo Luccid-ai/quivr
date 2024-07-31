@@ -272,3 +272,7 @@ xxhash==3.4.1; python_version >= '3.7'
 yarl==1.9.4; python_version >= '3.7'
 zipp==3.18.1; python_version >= '3.8'
 peft
+arize-otel
+openinference-instrumentation-openai
+opentelemetry-sdk
+opentelemetry-exporter-otlp
