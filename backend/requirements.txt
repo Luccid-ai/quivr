@@ -105,7 +105,7 @@ git+https://github.com/FlagOpen/FlagEmbedding.git
 llama-index==0.10.36; python_version < '4.0' and python_full_version >= '3.8.1'
 llama-index-agent-openai==0.2.4; python_version < '4.0' and python_full_version >= '3.8.1'
 llama-index-cli==0.1.12; python_version < '4.0' and python_full_version >= '3.8.1'
-llama-index-core==0.10.36; python_version < '4.0' and python_full_version >= '3.8.1'
+llama-index-core==0.10.43; python_version < '4.0' and python_full_version >= '3.8.1'
 llama-index-embeddings-openai==0.1.9; python_version < '4.0' and python_full_version >= '3.8.1'
 llama-index-indices-managed-llama-cloud==0.1.6; python_version < '4.0' and python_full_version >= '3.8.1'
 llama-index-legacy==0.9.48; python_version < '4.0' and python_full_version >= '3.8.1'
@@ -124,6 +124,7 @@ llama-parse==0.4.2; python_version < '4.0' and python_full_version >= '3.8.1'
 llamaindex-py-client==0.1.19; python_version >= '3.8' and python_version < '4'
 llama-index-llms-gemini==0.1.11
 llama-index-embeddings-gemini==0.1.8
+openinference-instrumentation-llama-index>=2
 lxml[html_clean]==5.2.1; python_version >= '3.6'
 lxml-html-clean==0.1.1
 markdown==3.6
