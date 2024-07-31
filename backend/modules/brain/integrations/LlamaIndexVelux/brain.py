@@ -30,7 +30,7 @@ from llama_index.postprocessor.flag_embedding_reranker import FlagEmbeddingReran
 # from llama_index.storage.docstore.redis import RedisDocumentStore
 # from llama_index.vector_stores.redis import RedisVectorStore
 
-from modules.brain.integrations.LlamaIndexSerbiaGemini.GeminiCustom import GeminiCustom
+from modules.brain.integrations.LlamaIndexSerbiaGemini.gemini_custom import GeminiCustom
 from modules.brain.knowledge_brain_qa import KnowledgeBrainQA
 from modules.chat.dto.chats import ChatQuestion
 
