@@ -27,17 +27,19 @@ from llama_index.core.prompts import PromptTemplate, PromptType
 from llama_index.embeddings.gemini import GeminiEmbedding
 from llama_index.postprocessor.flag_embedding_reranker import FlagEmbeddingReranker
 
+from llama_index.core.evaluation import RelevancyEvaluator
 # from llama_index.readers.google import GoogleDriveReader
 # from llama_index.storage.kvstore.redis import RedisKVStore as RedisCache
 # from llama_index.storage.docstore.redis import RedisDocumentStore
 # from llama_index.vector_stores.redis import RedisVectorStore
 
-from modules.brain.integrations.LlamaIndexSerbiaGemini.GeminiCustom import GeminiCustom
+from modules.brain.integrations.LlamaIndexSerbiaGemini.gemini_custom import GeminiCustom
+from modules.brain.integrations.LlamaIndexSerbiaGemini.retry_context_chat_engine import CustomChatEngine
+from llama_index.core.chat_engine.context import ContextChatEngine
 from modules.brain.knowledge_brain_qa import KnowledgeBrainQA
 from modules.chat.dto.chats import ChatQuestion
 from arize_otel import register_otel, Endpoints
 from openinference.instrumentation.llama_index import LlamaIndexInstrumentor
-import os
 
 data_directory = "luccid-data/data/"
 folder_name = "Documents/SerbiaGemini"
@@ -54,7 +56,7 @@ Instructions for Responses:
     - Adaptability: Tailor responses to the user's level of understanding. If the user is not an expert, explain regulations in simple terms. If information is insufficient, specify what additional information is needed.
     - Use of Ekavica: Responses should be written exclusively in Ekavica, using Serbian Latin script. Avoid using Ijekavica.
 
-    Goal: To assist architects and professionals in complying with Serbian building regulations.
+Goal: To assist architects and professionals in complying with Serbian building regulations.
 
 Few-shot examples:
     <examples>
@@ -75,7 +77,51 @@ Few-shot examples:
 
         Query: Kako se označavaju projekti u tehničkoj domunetaciji?
         Response: Projekti su u tehničkoj dokumentaciji označeni rednim brojem i obavezno složeni u sveske, prema sledećim oblastima i redosledu: broj "1": arhitektura, broj "2": građevinski projekti, broj "3": hidrotehničke instalacije, broj "4": elektroenergetske instalacije, broj "5": telekomunikacione i signalne instalacije, broj "6": mašinske instalacije, broj "7": tehnologija, broj "8": saobraćaj i saobraćajna signalizacija, broj "9": spoljno uređenje sa sinhron-planom instalacija i priključaka, pejzažna arhitektura i hortikultura, broj "10": pripremni radovi (rušenje, zemljani radovi, obezbeđenje temeljne jame). Projekat priključka na javnu komunalnu infrastrukturu je deo projekta odgovarajuće oblasti, odnosno vrste instalacija. Svaki projekat određene oblasti se može deliti na više svezaka koje dobijaju odgovarajuće oznake u zavisnosti odsadržaja projekta (na primer: 2/1 konstrukcija, 2/2 saobraćajnice i dr., 3/1 vodovod, 3/2 kanalizacija i dr., 6/1 grejanje, 6/2ventilacija i klimatizacija itd.).
+    </examples>
+"""
 
+EVALUATE_SYSTEM_INSTRUCTIONS = """
+Primary Role: You are an experienced assessor specializing in evaluating responses based on given contextual information.
+Instructions for Responses:
+    -Clarity and Conciseness: Responses should be clear, concise, and to the point. Avoid unnecessary elaboration.
+    -Consistency: Check if the response is aligned with the context provided.
+    -Relevance: Ensure the response directly answers the question based on the provided context.
+    -Binary Decision: Provide your assessment in a YES or NO format.
+    -Precision: Focus on the accuracy and appropriateness of the response in relation to the context.
+    -Neutrality: Maintain objectivity and avoid adding personal opinions or external information not included in the provided context.
+    -Timeliness: Ensure that the most current information is considered if relevant.
+    -Avoid Apologizing: Do not include any form of apology in the responses.
+
+Goal: To determine if the given response is consistent with the provided contextual information.
+
+Few-shot examples:
+    <examples>
+        Context: The sky is clear and blue.
+        Query: What color is the sky?
+        Response: The sky is blue.
+        Assessment: YES
+
+        ruby
+        Copy code
+        **Context:** The user requested information about the weather.
+        **Query:** What is the temperature today?
+        **Response:** The temperature is 25°C.
+        **Assessment:** YES
+
+        **Context:** The capital of France is Paris.
+        **Query:** What is the capital of France?
+        **Response:** The capital of France is London.
+        **Assessment:** NO
+
+        **Context:** The project deadline is next Friday.
+        **Query:** When is the project deadline?
+        **Response:** The project deadline is next Friday.
+        **Assessment:** YES
+
+        **Context:** The instructions state to use only blue ink.
+        **Query:** What color ink should be used?
+        **Response:** You should use red ink.
+        **Assessment:** NO
     </examples>
 """
 
@@ -179,6 +225,7 @@ class LlamaIndexSerbiaGemini(KnowledgeBrainQA):
 
     def __init__(
         self,
+        eval_llm: GeminiCustom = GeminiCustom(model="models/gemini-1.5-pro", safety_settings=safety_settings, system_instructions=EVALUATE_SYSTEM_INSTRUCTIONS),
         **kwargs,
     ):
         super().__init__(
@@ -187,8 +234,9 @@ class LlamaIndexSerbiaGemini(KnowledgeBrainQA):
         self._storage_context = storage_context
         self._index = index
         self._reranker = reranker
+        self._eval_llm = eval_llm
 
-    def _get_engine(self):
+    def _get_engine(self, chat__history):
         if not self._index:
             print("### No index found...")
             return None
@@ -203,7 +251,20 @@ class LlamaIndexSerbiaGemini(KnowledgeBrainQA):
             DEFAULT_TEXT_QA_PROMPT_TMPL, prompt_type=PromptType.QUESTION_ANSWER
         )
 
-        return self._index.as_chat_engine(
+        EVALUATOR_PROMPT_TMPL = (
+            "Query and Response:"
+            "{query_str}"
+            "Context:"
+            "{context_str}"
+            "Answer:"
+        )
+
+        query_response_evaluator = RelevancyEvaluator(
+            llm=self._eval_llm,
+            eval_template=EVALUATOR_PROMPT_TMPL
+        )
+
+        context_chat_engine = self._index.as_chat_engine(
             chat_mode=ChatMode.CONTEXT,
             similarity_top_k=20,
             node_postprocessors=[self._reranker],
@@ -211,9 +272,11 @@ class LlamaIndexSerbiaGemini(KnowledgeBrainQA):
             stream=True,
             verbose=True,
         )
-        # return self._index.as_query_engine(
-        #     text_qa_template=DEFAULT_TEXT_QA_PROMPT, stream=True, verbose=True
-        # )
+
+        if isinstance(context_chat_engine, ContextChatEngine):
+            return CustomChatEngine(context_chat_engine=context_chat_engine, evaluator=query_response_evaluator, max_retries=1)
+        
+        return None
 
     def _format_chat_history(self, chat_history):
         return [
@@ -240,35 +303,29 @@ class LlamaIndexSerbiaGemini(KnowledgeBrainQA):
         self, chat_id: UUID, question: ChatQuestion, save_answer: bool = True
     ) -> AsyncIterable:
         print(f"####### Calling generate_stream with question: {question} #######")
-        chat_engine = self._get_engine()
-        if not chat_engine:
-            raise ValueError("No chat engine found")
         transformed_history, streamed_chat_history = (
             self.initialize_streamed_chat_history(chat_id, question)
         )
         print(f"####### transformed_history: {transformed_history} #######")
-        llama_index_transformed_history = self._format_chat_history(transformed_history)
-        # llama_index_transformed_history = self._format_chat_history(transformed_history[-1:])
+        llama_index_transformed_history = self._format_chat_history(transformed_history[-5:])
+
+        chat_engine = self._get_engine(llama_index_transformed_history)
+        if not chat_engine:
+            raise ValueError("No chat engine found")
 
         response_tokens = []
-        # response = await chat_engine.astream_chat(
-        #     message=question.question,
-        #     chat_history=llama_index_transformed_history,
-        # )
-        response = chat_engine.stream_chat(
+
+        response = await chat_engine.achat(
             message=question.question,
             chat_history=llama_index_transformed_history,
         )
-        for chunk in response.response_gen:
-            print(chunk)
+
+        chunk_size = 3
+        for i in range(0, len(response.response), chunk_size):
+            chunk = response.response[i:i+chunk_size]
             response_tokens.append(chunk)
             streamed_chat_history.assistant = chunk
             yield f"data: {json.dumps(streamed_chat_history.dict())}"
-        # response = await chat_engine.aquery(
-        #     question.question,
-        # )
-        # streamed_chat_history.assistant = str(response)
-        # yield f"data: {json.dumps(streamed_chat_history.dict())}"
 
-        # self.save_answer(question, str(response), streamed_chat_history, save_answer)
-        self.save_answer(question, response_tokens, streamed_chat_history, save_answer)
+        if len(response_tokens) > 0:
+            self.save_answer(question, response_tokens, streamed_chat_history, save_answer)
