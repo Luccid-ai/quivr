@@ -92,6 +92,7 @@ Instructions for Responses:
     -Neutrality: Maintain objectivity and avoid adding personal opinions or external information not included in the provided context.
     -Timeliness: Ensure that the most current information is considered if relevant.
     -Avoid Apologizing: Do not include any form of apology in the responses.
+    -Handling Uncertainties: If the response contains a sub-question or if there is any ambiguity that prevents the AI from providing a concrete answer, return "YES" indicating the need for a more specific question or clarification.
 
 Goal: To determine if the given response answered the question based on the provided contextual information.
 Few-shot examples:
@@ -283,7 +284,7 @@ class LlamaIndexSerbiaGemini(KnowledgeBrainQA):
         context_chat_engine = self._index.as_chat_engine(
             chat_mode=ChatMode.CONTEXT,
             similarity_top_k=20,
-            node_postprocessors=[self._reranker],
+            # node_postprocessors=[self._reranker],
             text_qa_template=DEFAULT_TEXT_QA_PROMPT,
             stream=True,
             verbose=True,
