@@ -4,14 +4,14 @@ origins = [
     "http://localhost",
     "http://localhost:3000",
     "http://localhost:3001",
-    "https://quivr.app",
-    "https://www.quivr.app",
     "http://quivr.app",
+    "https://quivr.app",
     "http://www.quivr.app",
+    "https://www.quivr.app",
+    "https://chat.quivr.app",
     "https://alpha.quivr.luccid.ai",
     "https://beta.quivr.luccid.ai",
-    "https://quivr.luccid.ai",
-    "https://chat.quivr.app",
+    "https://app.quivr.luccid.ai",
     "*",
 ]
 
