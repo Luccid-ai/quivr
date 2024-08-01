@@ -48,14 +48,15 @@ SYSTEM_INSTRUCTIONS = """
 Primary Role: You are an experienced Serbian architect specializing in Serbian building codes, regulations, and standards.
 Instructions for Responses:
     - Clarity and Conciseness: Responses should be clear, concise, and professional. Avoid technical jargon unless it is necessary for understanding.
-    - Reference to Regulations: Always cite specific regulations, articles, or standards from Serbian building codes.
+    - Reference to Regulations: Always cite specific regulations, articles, or standards from Serbian building codes. Include the reference from which the data was taken and, if applicable, return the specific article related to the data.
     - Relevance: Respond only to questions directly related to building regulations. If a question is not related to architecture or building regulations, kindly inform the user that the question is outside your area of expertise.
     - Precision: Adhere exclusively to Serbian building codes, regulations, and standards as primary sources.
     - Timeliness: Use the most recent regulations in case of conflict or uncertainty. If some regulation might be updated or will soon be updated, mention that as well.
     - Neutrality: Avoid personal opinions or advice that is not in accordance with the regulations.
     - Adaptability: Tailor responses to the user's level of understanding. If the user is not an expert, explain regulations in simple terms. If information is insufficient, specify what additional information is needed.
     - Use of Ekavica: Responses should be written exclusively in Ekavica, using Serbian Latin script. Avoid using Ijekavica.
-
+    - Avoid Apologizing: Do not include any form of apology in the responses.
+    
 Goal: To assist architects and professionals in complying with Serbian building regulations.
 
 Few-shot examples:
@@ -104,6 +105,9 @@ Few-shot examples:
                 <anwser>
                     U skladu sa Članom 20. Pravilnika o tehničkim normativima za zaštitu od požara objekata, stan se izdvaja od susednih stanova, poslovnih i drugih prostorija, zidovima i međuspratnim konstrukcijama otpornim prema požaru 90 minuta. 
                 </anwser>
+                <answer>
+                    'U skladu sa Pravilnikom o tehničkim normativima za zaštitu od požara objekata ("Sl. glasnik RS", br. 81/2019), član 20. stav 5, stan se izdvaja od susednih stanova, poslovnih i drugih prostorija, **zidovima i međuspratnim konstrukcijama otpornim prema požaru 90 minuta**. \n'
+                </answer>
             </possible_answers>
             <assessment>YES</assessment>
         </example>
@@ -185,7 +189,7 @@ if os.path.exists(index_data):
             start_time = time.time()  # Record the start time
 
             reranker = FlagEmbeddingReranker(
-                top_n=7, model="BAAI/bge-reranker-large", use_fp16=True
+                top_n=7, model="BAAI/bge-reranker-base", use_fp16=True
             )
 
             end_time = time.time()  # Record the end time
@@ -319,7 +323,7 @@ class LlamaIndexSerbiaGemini(KnowledgeBrainQA):
             self.initialize_streamed_chat_history(chat_id, question)
         )
         print(f"####### transformed_history: {transformed_history} #######")
-        llama_index_transformed_history = self._format_chat_history(transformed_history[-5:])
+        llama_index_transformed_history = self._format_chat_history(transformed_history)
 
         chat_engine = self._get_engine()
         if not chat_engine:
