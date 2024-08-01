@@ -12,7 +12,7 @@ from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openai import OpenAI
 
 data_directory = "/home/pascal_gula_luccid_ai/luccid-data/"
-folder_name = "Documents/Manufacturers/Velux-Serbia"
+folder_name = "Documents/Manufacturers/Velux-UK"
 index_data = os.path.join(data_directory, folder_name, "index-data")
 
 embed_model = OpenAIEmbedding(model="text-embedding-3-small")

@@ -36,7 +36,7 @@ from modules.brain.knowledge_brain_qa import KnowledgeBrainQA
 from modules.chat.dto.chats import ChatQuestion
 
 data_directory = "/data/"
-folder_name = "Documents/Manufacturers/Velux-Serbia"
+folder_name = "Documents/Manufacturers/Velux-UK"
 index_data = os.path.join(data_directory, folder_name, "index-data")
 
 storage_context = None
@@ -49,9 +49,7 @@ if os.path.exists(index_data):
             print("####### Starting loading storage context... #######")
             start_time = time.time()  # Record the start time
 
-            storage_context = StorageContext.from_defaults(
-                persist_dir=index_data
-            )
+            storage_context = StorageContext.from_defaults(persist_dir=index_data)
 
             end_time = time.time()  # Record the end time
             elapsed_time = end_time - start_time  # Calculate elapsed time
@@ -92,13 +90,13 @@ else:
     print("### No index found...")
 
 embed_model = OpenAIEmbedding(model="text-embedding-3-small")
-llm = OpenAI(model="gpt-4-turbo-preview")
+llm = OpenAI(model="gpt-4o")
 
 Settings.llm = llm
 Settings.embed_model = embed_model
 
 
-class LlamaIndexBrain(KnowledgeBrainQA):
+class LlamaIndexVeluxUK(KnowledgeBrainQA):
     """This is a first implementation of LlamaIndex recursive retriever RAG class. it is a KnowledgeBrainQA has the data is stored locally.
     It is going to call the Data Store internally to get the data.
 
@@ -122,40 +120,40 @@ class LlamaIndexBrain(KnowledgeBrainQA):
             print("### No index found...")
             return None
 
-        DEFAULT_TEXT_QA_PROMPT_TMPL = (
+        VELUX_TEXT_QA_PROMPT_TMPL = (
             "Context information is below.\n"
             "---------------------\n"
             "{context_str}\n"
             "---------------------\n"
-            "You are an experienced Serbian architect specializing in Serbian building codes, regulations, and norms." 
-            "You will answer in Professional architectural language."
+            "Only use information and product details provided in the context."
+            "You are an experienced architect specializing in Velux products (building and construction products, TODO(pg)...)."
+            "You will answer in Professional architectural and building and construction products Language."
             "Keep your answers short and always deliver only what was asked."
-            "Always quote the specific regulation name, paragraph, or norm depending on the case."
-            "You should use professional language and have a deep understanding of the relevant laws and guidelines in the field of architecture and construction."
             "Be as descriptive as possible. Always make sure to provide 100% correct information."
             "When responding, avoid giving personal opinions or advice that goes beyond the scope of regulations."
-            "In cases of conflicting information, use the most recent regulation by the date of being published."
+            "In cases of conflicting information, use the most recent product by the date of being published."
             "Your responses should be clear, concise, and tailored to the level of understanding of the user, ensuring they receive the most relevant and accurate information."
             "Your goal is to help architects with building regulations so they don't get rejected by the building inspectorate."
-            "If information is unavailable on a queried topic, respond with: “Na žalost, na ovo pitanje nemam odgovor"
+            "Always answer in the language you were spoken to unless the user speaks in serbian or croatian, then always answer in latin serbian."
             "Query: {query_str}\n"
-            "Answer: "
         )
-        DEFAULT_TEXT_QA_PROMPT = PromptTemplate(
-            DEFAULT_TEXT_QA_PROMPT_TMPL, prompt_type=PromptType.QUESTION_ANSWER
+        VELUX_TEXT_QA_PROMPT = PromptTemplate(
+            VELUX_TEXT_QA_PROMPT_TMPL, prompt_type=PromptType.QUESTION_ANSWER
+        )
+        VELUX_SYSTEM_PROMPT_TMPL = VELUX_TEXT_QA_PROMPT_TMPL
+        VELUX_SYSTEM_PROMPT = PromptTemplate(
+            VELUX_SYSTEM_PROMPT_TMPL, prompt_type=PromptType.CUSTOM
         )
 
         return self._index.as_chat_engine(
             chat_mode=ChatMode.CONTEXT,
-            similarity_top_k=10,
+            similarity_top_k=15,
             node_postprocessors=[self._reranker],
-            text_qa_template=DEFAULT_TEXT_QA_PROMPT,
+            text_qa_template=VELUX_TEXT_QA_PROMPT,
+            system_prompt=VELUX_SYSTEM_PROMPT,
             stream=True,
             verbose=True,
         )
-        # return self._index.as_query_engine(
-        #     text_qa_template=DEFAULT_TEXT_QA_PROMPT, stream=True, verbose=True
-        # )
 
     def _format_chat_history(self, chat_history):
         return [

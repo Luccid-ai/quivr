@@ -16,6 +16,7 @@ from llama_index.core import (
 # from llama_index.core.base.base_query_engine import BaseQueryEngine
 from llama_index.core.chat_engine.types import ChatMode
 from llama_index.core.llms import ChatMessage, MessageRole
+from llama_index.core.node_parser import MarkdownElementNodeParser
 from llama_index.core.prompts import PromptTemplate, PromptType
 
 # from llama_index.core.ingestion import (
@@ -36,7 +37,7 @@ from modules.brain.knowledge_brain_qa import KnowledgeBrainQA
 from modules.chat.dto.chats import ChatQuestion
 
 data_directory = "/data/"
-folder_name = "Documents/Manufacturers/Velux-Serbia"
+folder_name = "Documents/Manufacturers/Knauf-Insulation"
 index_data = os.path.join(data_directory, folder_name, "index-data")
 
 storage_context = None
@@ -98,7 +99,7 @@ Settings.llm = llm
 Settings.embed_model = embed_model
 
 
-class LlamaIndexBrain(KnowledgeBrainQA):
+class LlamaIndexKnauf(KnowledgeBrainQA):
     """This is a first implementation of LlamaIndex recursive retriever RAG class. it is a KnowledgeBrainQA has the data is stored locally.
     It is going to call the Data Store internally to get the data.
 
@@ -127,8 +128,8 @@ class LlamaIndexBrain(KnowledgeBrainQA):
             "---------------------\n"
             "{context_str}\n"
             "---------------------\n"
-            "You are an experienced Serbian architect specializing in Serbian building codes, regulations, and norms." 
-            "You will answer in Professional architectural language."
+            "You are an experienced architect specializing in Knauf products (building and construction products, TODO(pg)...)."
+            "You will answer in Professional architectural and building and construction products Language."
             "Keep your answers short and always deliver only what was asked."
             "Always quote the specific regulation name, paragraph, or norm depending on the case."
             "You should use professional language and have a deep understanding of the relevant laws and guidelines in the field of architecture and construction."
@@ -137,7 +138,6 @@ class LlamaIndexBrain(KnowledgeBrainQA):
             "In cases of conflicting information, use the most recent regulation by the date of being published."
             "Your responses should be clear, concise, and tailored to the level of understanding of the user, ensuring they receive the most relevant and accurate information."
             "Your goal is to help architects with building regulations so they don't get rejected by the building inspectorate."
-            "If information is unavailable on a queried topic, respond with: “Na žalost, na ovo pitanje nemam odgovor"
             "Query: {query_str}\n"
             "Answer: "
         )
