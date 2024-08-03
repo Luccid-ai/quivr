@@ -1,8 +1,17 @@
+import os
 from models.settings import get_supabase_client
 from modules.chat.dto.inputs import ChatMessageProperties
 from modules.chat.entity.chat import Chat
 from modules.chat.repository.chats_interface import ChatsInterface
+from typing import Optional
 
+CHAT_HISTORY_LIMIT:Optional[int] = None
+CHAT_HISTORY_LIMIT_STR = os.getenv('CHAT_HISTORY_LIMIT')
+try:
+    if CHAT_HISTORY_LIMIT_STR:
+        CHAT_HISTORY_LIMIT = int(CHAT_HISTORY_LIMIT_STR)
+except ValueError as e:
+    raise e
 
 class Chats(ChatsInterface):
     def __init__(self):
@@ -40,13 +49,19 @@ class Chats(ChatsInterface):
         return None
 
     def get_chat_history(self, chat_id: str):
-        response = (
+        limit = CHAT_HISTORY_LIMIT
+
+        query = (
             self.db.from_("chat_history")
             .select("*")
             .filter("chat_id", "eq", chat_id)
             .order("message_time", desc=False)  # Add the ORDER BY clause
-            .execute()
         )
+
+        if limit is not None:
+            query = query.limit(limit)  # Add the LIMIT clause if limit is specified
+
+        response = query.execute()
 
         return response
 
